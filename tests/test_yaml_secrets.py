@@ -1,11 +1,11 @@
-"""Tests for bao_yaml drop-in YAML loader."""
+"""Tests for yaml_secrets drop-in YAML loader."""
 
 import io
 import os
 
-import bao_yaml as yaml
-import bao_yaml as vault_yaml
-import bao_yaml as openbao_yaml
+import yaml_secrets as yaml
+import yaml_secrets as vault_yaml
+import yaml_secrets as openbao_yaml
 import pytest
 
 
@@ -29,7 +29,7 @@ secret/app/api:
 
 
 def test_drop_in_replace(mock_secrets):
-    """A project can swap PyYAML for bao_yaml without changing anything else."""
+    """A project can swap PyYAML for yaml_secrets without changing anything else."""
     cfg_text = """
 provider: openai
 api_key: "{{ vault('secret/app/api', 'api_key') }}"
@@ -134,12 +134,12 @@ missing: "{{ vault('secret/app/db', 'nonexistent', 'fallback-value') }}"
 def test_whole_secret_dict(mock_secrets):
     # Whole-secret returns a dict, but YAML renders it as a JSON string.
     # Access the raw client instead for dict access.
-    from bao_yaml.vault import BaoClient
+    from yaml_secrets.vault import SecretClient
 
     cfg_text = """
 secrets: "{{ vault('secret/app/db') }}"
 """
-    client = BaoClient()
+    client = SecretClient()
     data = client.read_secret("secret/app/db")
     assert data["password"] == "hunter2"
     assert data["host"] == "db.internal"

@@ -1,6 +1,6 @@
-"""bao_yaml — drop-in YAML with secret substitution from HashiCorp Vault or OpenBao."""
+"""yaml_secrets — drop-in YAML with secret substitution from HashiCorp Vault or OpenBao."""
 
-from bao_yaml.loader import (
+from yaml_secrets.loader import (
     SafeLoader,
     Loader,
     FullLoader,
@@ -17,12 +17,12 @@ from bao_yaml.loader import (
     load_all,
     safe_load_all,
 )
-from bao_yaml.vault import BaoClient, BaoError, BaoSettings
+from yaml_secrets.vault import SecretClient, SecretError, SecretSettings
 
 __all__ = [
-    "BaoClient",
-    "BaoError",
-    "BaoSettings",
+    "SecretClient",
+    "SecretError",
+    "SecretSettings",
     "CFullLoader",
     "CLoader",
     "CSafeLoader",

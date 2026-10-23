@@ -1,5 +1,5 @@
 [project]
-name = "bao-yaml"
+name = "yaml-secrets"
 version = "0.1.0"
 description = "Drop-in PyYAML replacement with Vault/OpenBao secret substitution"
 readme = "README.md"

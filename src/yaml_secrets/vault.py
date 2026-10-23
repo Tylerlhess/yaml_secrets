@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
-class BaoError(RuntimeError):
+class SecretError(RuntimeError):
     """Raised when a secret lookup fails."""
 
 
@@ -22,7 +22,7 @@ def _env(name: str, default: str = "") -> str:
 
 
 @dataclass
-class BaoSettings:
+class SecretSettings:
     """Connection settings.
 
     OpenBao is detected automatically when ``BOPENBAO_ADDR`` or ``OPENBAO_ADDR``
@@ -66,18 +66,18 @@ class BaoSettings:
         return "openbao" if _env("OPENBAO_ADDR", _env("BOPENBAO_ADDR")) else "vault"
 
 
-class BaoClient:
+class SecretClient:
     """Read KV secrets from Vault or OpenBao with local caching.
 
     Usage is identical for both servers::
 
-        client = BaoClient()
+        client = SecretClient()
         value = client.get("secret/app/db", "password")
         whole = client.read_secret("secret/app/db")
     """
 
-    def __init__(self, settings: BaoSettings | None = None) -> None:
-        self.settings = settings or BaoSettings()
+    def __init__(self, settings: SecretSettings | None = None) -> None:
+        self.settings = settings or SecretSettings()
         self._client: Any | None = None
         self._cache: dict[str, tuple[float, dict[str, Any]]] = {}
         self._mock: dict[str, dict[str, Any]] | None = None
@@ -102,7 +102,7 @@ class BaoClient:
         if data is None:
             return {}
         if not isinstance(data, dict):
-            raise BaoError(f"Mock secrets file must be a mapping: {path}")
+            raise SecretError(f"Mock secrets file must be a mapping: {path}")
         return {str(k): dict(v) for k, v in data.items()}
 
     def _ensure_client(self) -> Any:
@@ -112,7 +112,7 @@ class BaoClient:
             return self._client
 
         if not self.settings.addr:
-            raise BaoError(
+            raise SecretError(
                 "No Vault/OpenBao server configured. Set VAULT_ADDR (or OPENBAO_ADDR) "
                 "and VAULT_TOKEN (or OPENBAO_TOKEN), or use BAO_MOCK_SECRETS for local mocks."
             )
@@ -129,10 +129,10 @@ class BaoClient:
                 secret_id=self.settings.secret_id,
             )
         else:
-            raise BaoError("No auth configured. Set VAULT_TOKEN or VAULT_ROLE_ID + VAULT_SECRET_ID.")
+            raise SecretError("No auth configured. Set VAULT_TOKEN or VAULT_ROLE_ID + VAULT_SECRET_ID.")
 
         if not client.is_authenticated():
-            raise BaoError("Authentication failed.")
+            raise SecretError("Authentication failed.")
 
         self._client = client
         return client
@@ -164,7 +164,7 @@ class BaoClient:
                 )
                 data = self._mock.get(secret_path) or self._mock.get(f"{mount}/{secret_path}")
             if data is None:
-                raise BaoError(f"Secret not found: {path}")
+                raise SecretError(f"Secret not found: {path}")
             self._cache[path] = (now, dict(data))
             return dict(data)
 
@@ -185,10 +185,10 @@ class BaoClient:
                 )
                 data = response["data"]
         except Exception as exc:  # noqa: BLE001
-            raise BaoError(f"Failed to read '{path}': {exc}") from exc
+            raise SecretError(f"Failed to read '{path}': {exc}") from exc
 
         if not isinstance(data, dict):
-            raise BaoError(f"Unexpected secret payload at '{path}'")
+            raise SecretError(f"Unexpected secret payload at '{path}'")
 
         self._cache[path] = (now, dict(data))
         return dict(data)
@@ -207,7 +207,7 @@ class BaoClient:
                 return default
             if not required:
                 return None
-            raise BaoError(f"Key '{key}' not found at '{path}'")
+            raise SecretError(f"Key '{key}' not found at '{path}'")
         return data[key]
 
     def clear_cache(self) -> None:

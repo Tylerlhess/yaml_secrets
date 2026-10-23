@@ -1,4 +1,4 @@
-# bao_yaml
+# yaml_secrets
 
 Drop-in PyYAML replacement with secret substitution from HashiCorp Vault or OpenBao.
 
@@ -12,10 +12,10 @@ python3 -m venv .venv
 
 ## Usage
 
-Replace `import yaml` with `import bao_yaml as yaml` — nothing else changes.
+Replace `import yaml` with `import yaml_secrets as yaml` — nothing else changes.
 
 ```python
-import bao_yaml as yaml  # or: import vault_yaml as yaml / openbao_yaml as yaml
+import yaml_secrets as yaml  # or: import vault_yaml as yaml / openbao_yaml as yaml
 
 with open("config.yaml") as f:
     cfg = yaml.safe_load(f)
@@ -45,7 +45,7 @@ region: "{{ region }}"
 
 ## Configuration
 
-Set environment variables before importing bao_yaml:
+Set environment variables before importing yaml_secrets:
 
 ```bash
 # HashiCorp Vault

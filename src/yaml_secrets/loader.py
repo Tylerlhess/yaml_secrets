@@ -2,7 +2,7 @@
 
 Usage is identical to PyYAML::
 
-    import bao_yaml as yaml          # or vault_yaml as yaml
+    import yaml_secrets as yaml
     cfg = yaml.safe_load(open("config.yaml"))
 
 Templates use Jinja2 syntax::
@@ -28,7 +28,7 @@ from typing import Any, BinaryIO, IO, TextIO
 import yaml as _pyyaml
 from jinja2 import Environment, BaseLoader, StrictUndefined, Undefined
 
-from bao_yaml.vault import BaoClient, BaoError, BaoSettings
+from yaml_secrets.vault import SecretClient, SecretError, SecretSettings
 
 __all__ = [
     "SafeLoader",
@@ -62,7 +62,7 @@ _VAULT_TAG_RE = re.compile(
 )
 
 
-def _build_env(client: BaoClient, strict: bool = True) -> Environment:
+def _build_env(client: SecretClient, strict: bool = True) -> Environment:
     env = Environment(
         loader=BaseLoader(),
         undefined=StrictUndefined if strict else Undefined,
@@ -82,7 +82,7 @@ def _build_env(client: BaoClient, strict: bool = True) -> Environment:
 
     def vault_filter(path_and_key: str, default: Any = ...) -> Any:
         if "#" not in path_and_key:
-            raise BaoError(f"vault filter needs 'path#key', got: {path_and_key!r}")
+            raise SecretError(f"vault filter needs 'path#key', got: {path_and_key!r}")
         path, key = path_and_key.split("#", 1)
         return client.get(path.strip(), key.strip(), default=default)
 
@@ -100,7 +100,7 @@ def _expand_vault_tags(text: str) -> str:
         key = match.group("key")
         ref = match.group("ref").strip().strip("'\"")
         if "#" not in ref:
-            raise BaoError(f"!vault needs 'path#key', got: {ref!r}")
+            raise SecretError(f"!vault needs 'path#key', got: {ref!r}")
         path, field = ref.split("#", 1)
         expr = "{{ vault('%s', '%s') }}" % (path.strip(), field.strip())
         return f"{indent}{key}: {expr}"
@@ -108,7 +108,7 @@ def _expand_vault_tags(text: str) -> str:
     return _VAULT_TAG_RE.sub(repl, text)
 
 
-class _BaoMixin:
+class _SecretMixin:
     """Mixin that renders Jinja2 + expands !vault tags before handing off to
     the underlying PyYAML loader."""
 
@@ -120,7 +120,7 @@ class _BaoMixin:
         else:
             raw = stream.read()  # type: ignore[union-attr]
 
-        client = BaoClient()
+        client = SecretClient()
         env = _build_env(client, strict=self.strict)
         rendered = env.from_string(_expand_vault_tags(raw)).render(env=os.environ)
 
@@ -129,21 +129,21 @@ class _BaoMixin:
         super().__init__(io.StringIO(rendered))
 
 
-class SafeLoader(_BaoMixin, _pyyaml.SafeLoader):
+class SafeLoader(_SecretMixin, _pyyaml.SafeLoader):
     """Drop-in replacement for ``yaml.SafeLoader`` with Vault substitution."""
 
     strict = True
 
 
-class Loader(_BaoMixin, _pyyaml.Loader):
+class Loader(_SecretMixin, _pyyaml.Loader):
     strict = True
 
 
-class FullLoader(_BaoMixin, _pyyaml.FullLoader):
+class FullLoader(_SecretMixin, _pyyaml.FullLoader):
     strict = True
 
 
-class UnsafeLoader(_BaoMixin, _pyyaml.UnsafeLoader):
+class UnsafeLoader(_SecretMixin, _pyyaml.UnsafeLoader):
     strict = True
 
 
